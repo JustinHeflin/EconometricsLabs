@@ -1,0 +1,129 @@
+---
+title: "In-Class Lab 8"
+author: "ECON 425 (Justin Heflin, West Virginia University)"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{multicol}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+date: "March 10, 2023"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The purpose of this lab is to practice using R to detect the severity of multicollinearity in a regression equation. The lab may be completed as a group. To receive credit, upload your .R script to the appropriate place on eCampus (``In-Class Labs'' folder).
+
+## For starters
+Open a new R script (named `ICL8_XYZ.R`, where `XYZ` are your initials)
+
+## Clean out/``Sweep'' R Studio
+Click the broom in the Environment panel (top-right), it is directly below the Tutorial button. Also, in the bottom-right panel, click the Plots button and then click the broom in that panel. This should help with loading things into R. 
+
+# Multicollinearity
+
+## Install a New R Package
+
+To illustrate how to calculte VIF for a regression model in R, we will use a built-in data-set in the R package `car`. We installed the `car` R package in the In-Class Lab 5. If you were unable to complete that particular lab then please go ahead and install the R package car using the following line of code:
+```{}
+install.packages("car")
+```
+If you have already installed that R package then you can go ahead and load the `car` package like so: 
+```{r}
+library(car)
+car_data <- as.data.frame(mtcars)
+```
+
+Each observation represents a different type of car. Since there are 32 observations this implies there are data on 32 different types of cars. This would be an example of a cross-sectional data-set. \vspace{2cm}
+
+\textbf{Brief Variable Description}
+\begin{itemize}
+\item mpg: miles per gallon
+\item cyl: number of cylinders
+\item disp: displacement cubic inches
+\item hp: gross horsepower
+\item wt: weight
+\item drat: rear axle ratio
+\item qsec: 1/4 mile time (for more information on this variable watch the first Fast and Furious movie)
+\end{itemize}
+
+## Regression Model
+```{r results='hide'}
+regression <- lm(mpg ~ disp + hp + wt + drat, data = car_data)
+summary(regression)
+```
+Comment out the returned value for $R^2$. Do you consider this a "good" $R^2$? 
+
+## VIF
+Now, we will use the `vif()` function from the `car` package to calculate the VIF for each indepedent variable in our model:
+
+```{r results='hide'}
+vif(regression)
+```
+
+Comment out the VIF for each independent variable. 
+
+Of the variance inflation factors for each independent variable, are there any independent variables we should be concerned about? If so, comment out which independent variable(s) show severe signs of multicollinearity.
+
+## Visualizing VIF Values 
+To visualize the VIF values for each independent variable, we can create a simple plot. 
+
+First, let's create a vector of our VIF values
+```{r results='hide'}
+vif_values <- vif(regression)
+```
+
+Now, let's plot our VIF values
+```{r results='hide'}
+barplot(vif_values, main = "VIF Values", horiz = TRUE, col = "steelblue") + 
+  abline(v = 5, lwd = 3, lty = 2)
+```
+
+## Simple Correlation Coefficient
+To gain a better understanding of why one independent variable may have a high VIF value, we can create a correlation matrix to view the linear correlation coefficients between each pair of variables. A simple correlation coefficient, notated by r, is a value from +1 to -1, where the sign indicates the direction of the correlation between the two variables.
+
+First, let's subset and index our data-set to only include the four independent variables in our original regression model. The second line of code creates our correlation matrix
+```{r}
+car_data_2 <- mtcars[,c("disp", "hp", "wt", "drat")]
+cor(car_data_2)
+```
+Recall that the variable `disp` had a VIF value over 8, which was the largest VIF value among all of the independent variables in the model. From the correlation matrix we can see that `disp` is strongly correlated with all three of the other independent variables, which explains why it has such a high VIF value.
+
+In this case, we may want to remove `disp` from the model because it has a high VIF value \textbf{and} it was not statistically significant at the 0.05 significance level. 
+
+## Dropping `disp` from our model and re-running our regression
+
+```{r results='hide'}
+regression2 <- lm(mpg ~ hp + wt + drat, data = car_data)
+summary(regression2)
+```
+Compare the standard errors for `hp`, `wt`, and `drat` from `regression` to `regression2`. Which regression model has smaller standard errors? Comment out your answer. 
+
+Does our $R^2$ drastically change when compared to the $R^2$ for `regression`? Does this make sense? Comment out your response.
+
+## Re-calculate VIF values
+Using our second regression model, let's calculate the VIF values for each independent variable:
+
+```{r results='hide'}
+vif(regression2)
+```
+
+Comment out the VIF for each independent variable. 
+
+Of the variance inflation factors for each independent variable, are there any independent variables we should be concerned about? If so, comment out which independent variable(s) show severe signs of multicollinearity.
+

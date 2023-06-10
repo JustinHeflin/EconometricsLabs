@@ -1,0 +1,120 @@
+---
+title: "In-Class Lab 7"
+author: "ECON 425 (Justin Heflin, West Virginia University)"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{multicol}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+date: "March 3, 2023"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The purpose of this lab is to practice using R to conduct hypothesis tests. The lab may be completed as a group. To receive credit, upload your .R script to the appropriate place on eCampus (``In-Class Labs'' folder).
+
+## For starters
+Open a new R script (named `ICL7_XYZ.R`, where `XYZ` are your initials)
+
+## Clean out/``Sweep'' R Studio
+Click the broom in the Environment panel (top-right), it is directly below the Tutorial button. Also, in the bottom-right panel, click the Plots button and then click the broom in that panel. This should help with loading things into R. 
+
+## Hypothesis Testing
+
+\begin{equation*}
+colGPA = \beta_{0} + \beta_{1}hsGPA + \beta_{2}ACT + \beta_{3}skipped + \epsilon
+\end{equation*}
+
+\begin{itemize}
+\item colGPA: college GPA
+\item hsGPA: high school GPA
+\item ACT: ACT score
+\item skipped: average lectures missed per week 
+\end{itemize}
+
+Let's develop hypotheses for each slope coefficient: 
+
+
+$H_{0}: \beta_{hsGPA} = 0 ; \hspace{4mm} H_{0}: \beta_{ACT} = 0 ; \hspace{4mm} H_{0}: \beta_{skipped} = 0$ 
+
+$H_{A}: \beta_{hsGPA} \neq 0 ; \hspace{4mm} H_{A}: \beta_{ACT} \neq 0 ; \hspace{4mm} H_{A}: \beta_{skipped} \neq 0$
+
+Each hypothesis test for slope coefficients above are two-tailed.
+
+\begin{equation*}
+\widehat{colGPA} = 1.39 + \underset{\textcolor{red}{(.094)}}{.412hsGPA} + \underset{\textcolor{red}{(.011)}}{.015ACT} - \underset{\textcolor{red}{(.026)}}{.083skipped}
+\end{equation*} \vspace{2cm}
+
+
+### Calculate t-statistic for each slope coefficient
+\begin{multicols}{3}
+\begin{equation*}
+t_{hsGPA} = \frac{.412}{.094} \rightarrow 4.383
+\end{equation*} \break
+\begin{equation*}
+t_{ACT} = \frac{.015}{.011} \rightarrow 1.364
+\end{equation*} \break
+\begin{equation*}
+t_{skipped} = \frac{-.083}{.026} \rightarrow -3.192
+\end{equation*}
+\end{multicols}
+
+Degrees of Freedom (DF) = 137 (N - K - 1 $\Longrightarrow$ 141 - 3 - 1) 
+
+Select level of significance: $\alpha$ = 5\% (0.05)
+\begin{itemize}
+\item Critical t-value based on the DF, chosen level of significance, and two-tail test is about 1.96 from t-table
+\end{itemize}
+
+Compare $t_{skipped}$ = -3.192 to critical t-value $t_c$ = 1.96 using the decision rule:
+
+(Reject $H_{0}$ if $|t_k| > t_{c}$ AND if $t_k$ also has the sign implied by $H_{A}$)
+
+$\Longrightarrow |-3.192| > 1.96 \hspace{2mm}; \hspace{1mm} \beta_{skipped} \neq 0$ which matches our $H_{A}$  
+
+This means we can reject the null hypothesis can conclude skipping lectures does indeed tend to have a negative relationship with college GPA (holding the other variables in the equation constant)
+
+## Hypothesis Testing in R  
+```{r}
+library(wooldridge)
+GPA_data <- as.data.frame(gpa1)
+```
+
+
+```{r}
+regression1 <- lm(colGPA ~ hsGPA + ACT + skipped, data = GPA_data)
+summary(regression1)
+```
+
+Now let's take a look at the confidence interval for each regression coefficient
+```{r}
+confint(regression1, level = 0.95)
+```
+
+```{}
+install.packages("GGally")
+```
+
+```{r}
+library(ggplot2)
+library(GGally)
+ggcoef(regression1, exclude_intercept = TRUE, vline_linetype = "solid",
+       vline_color = "blue", errorbar_color = "darkorange",
+       errorbar_height = 0.15)
+```

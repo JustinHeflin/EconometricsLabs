@@ -1,0 +1,132 @@
+---
+title: "In-Class Lab 9"
+author: "ECON 425 (Justin Heflin, West Virginia University)"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{multicol}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+date: "March 24, 2023"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = 'hide', fig.keep = 'none')
+```
+
+The purpose of this lab is to practice using R to test for serial correlation and how to fix it. The lab may be completed as a group. To receive credit, upload your .R script to the appropriate place on eCampus (``In-Class Labs'' folder).
+
+## For starters
+Open a new R script (named `ICL9_XYZ.R`, where `XYZ` are your initials)
+
+## Clean out/``Sweep'' R Studio
+Click the broom in the Environment panel (top-right), it is directly below the Tutorial button. Also, in the bottom-right panel, click the Plots button and then click the broom in that panel. This should help with loading things into R. 
+
+## R Packages
+First, install the `pdfetch`, `tsibble`, and `COVID19` packages. `pdfetch` stands for ''Public Data Fetch'' and is a slick way of downloading statistics on stock prices, GDP, inflation, unemployment, etc. `tsibble` is a package useful for working with time series data. `COVID19` pulls up-to date data on COVID-19 cases, deaths, etc.
+```
+install.packages("COVID19")
+install.packages("sandwich")
+install.packages("lmtest")
+install.packages("pdfetch")
+install.packages("tsibble")
+install.packages("magrittr")
+install.packages("tidyverse)
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(wooldridge)
+library(car)
+library(magrittr)
+library(lmtest)
+library(pdfetch)
+library(sandwich)
+library(tsibble)
+library(COVID19)
+library(tidyverse)
+```
+
+
+
+## Load the data
+We're going to use data on `US COVID-19` cases, death, and other information
+```{r results='hide'}
+COVID_Data <- covid19(c("US"))
+COVID_Time_Series <- as_tsibble(COVID_Data, key = id, index = date)
+```
+Now it will be easy to include lags of various varibles into our regression models
+
+```
+View(COVID_Time_Series)
+```
+
+## Plot time series data
+Let's have a look at the data on **new** daily cases and deaths:
+```{r}
+COVID_Time_Series %<>% mutate(new_deaths = difference(deaths), # data comes in cumulative format
+                  new_tests  = difference(tests), # "difference" converts it to
+                  new_cases  = difference(confirmed)) # "new cases" etc.
+
+# plots
+ggplot(COVID_Time_Series, aes(date, new_cases)) + geom_line()
+ggplot(COVID_Time_Series, aes(date, new_deaths)) + geom_line()
+
+# plots with 7-day rolling average
+ggplot(COVID_Time_Series, aes(date, new_cases)) + geom_line(aes(y=rollmean(new_cases, 7, 
+                                                                           na.pad=TRUE)))
+ggplot(COVID_Time_Series, aes(date, new_deaths)) + geom_line(aes(y=rollmean(new_deaths, 7, 
+                                                                            na.pad=TRUE)))
+```
+
+## Determinants of US COVID-19 Cases
+Now let's estimate the following regression model:
+\[
+\log(new\_cases_{t}) = \beta_0 + \beta_1 gath_t + \beta_2 gath_{t-7} + \beta_3 gath_{t-14} + \beta_4 \log(new\_cases_{t-7}) + u_t
+\]
+where $new\_cases$ is the number of new COVID cases, and $gath$ is a variable taking on values 0--4 representing severity of gatherings restricitons.
+
+```{r results='show'}
+COVID_Time_Series %<>% mutate(log.new.cases = log(new_cases),
+                  log.new.cases = replace(log.new.cases,new_cases==0,NA_real_)) 
+
+regression <- lm(log.new.cases ~ gatherings_restrictions + lag(gatherings_restrictions,7) + 
+                          lag(gatherings_restrictions,14) + lag(log.new.cases,7),
+                 data=COVID_Time_Series)
+summary(regression)
+```
+
+## Testing for Serial Correlation
+Using the Durbin-Watson Test:
+```{r results='show'}
+durbinWatsonTest(regression)
+```
+
+Now using the Lagrange Multiplier Test:
+```{r results='show'}
+bgtest(regression)
+```
+
+## Correcting for Serial Correlation
+Now let's compute Newey-West standard errors. To do so, we'll use the `vcov` option in the `modelsummary()` function along with the `NeweyWest` function from the `sandwich` package.
+
+```{r results='show'}
+NW_VCOV <- NeweyWest(regression)
+coeftest(regression, vcov = NW_VCOV)
+```
+
+How does your interpretation of the the effect of gathering restrictions change after using the Newey-West standard errors?
+
+

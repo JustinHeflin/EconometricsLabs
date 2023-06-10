@@ -1,0 +1,96 @@
+---
+title: "In-Class Lab 11"
+author: "ECON 425 (Justin Heflin, West Virginia University)"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{multicol}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+date: "April 26, 2023"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = 'hide', fig.keep = 'none')
+```
+
+The purpose of this lab is to practice using R for using dummy variables in R. The lab may be completed as a group. To receive credit, upload your .R script to the appropriate place on eCampus (``In-Class Labs'' folder).
+
+## For starters
+Open a new R script (named `ICL11_XYZ.R`, where `XYZ` are your initials)
+
+## Clean out/``Sweep'' R Studio
+Click the broom in the Environment panel (top-right), it is directly below the Tutorial button. Also, in the bottom-right panel, click the Plots button and then click the broom in that panel. This should help with loading things into R. 
+
+## R Packages
+```
+install.packages("magrittr")
+install.packages("broom")
+```
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggplot2)
+library(wooldridge)
+library(modelsummary)
+```
+
+## Load the data
+We'll use a new data set on extramarital affairs, called `affairs` from the Wooldridge R Package.
+```{r}
+affair_data <- as.data.frame(affairs)
+```
+
+\textbf{Variable Names and brief description:}
+\begin{itemize}
+\item male: =1 if male
+\item age: in years
+\item yrsmarr: years married
+\item kids =1 if have kids
+\item ratemarr: 5 = vry hap marr, 4 = hap than avg, 3 = avg, 2 = smewht unhap, 1 = vry unhap
+\item affair: =1 if had at least one affair
+\item naffairs: number of affairs within last year
+\end{itemize}
+
+Check out what's in the data by typing
+```{r}
+summary(affair_data)
+```
+You'll notice that there are a number of variables that only take on 0/1 values: `male`, `kids`, `affair`, `hapavg`, `vryrel`, etc. There are also variables that take on a few different values: `relig`, `occup`, and `ratemarr`.
+
+You can create a histogram of a factor variable in `ggplot()` as follows:
+```{r}
+ggplot(affair_data,aes(x=ratemarr)) + geom_bar()
+```
+
+## Multiple regression with factor variables
+Let's run a regression with `naffairs` as the dependent variable and `male`, `yrsmarr`, `kids`, and `ratemarr` as the covariates.
+```{r}
+regression <- lm(naffairs ~ male + yrsmarr + kids + ratemarr, data=affair_data)
+summary(regression)
+```
+
+## Linear Probability Model
+Let's run the same regression as before, but this time use `affair` as the dependent variable. What happens when you run the following code?
+```{r message=FALSE, warning=FALSE}
+regression_2 <- lm(affair ~ male + yrsmarr + kids + ratemarr, data=affair_data)
+summary(regression_2)
+```
+
+Finally, let’s run a more flexible model where we allow the effect of fathers and mothers to be different. The
+way to do this in lm() is as follows:
+```{r}
+regression_3 <- lm(affair ~ male*kids + yrsmarr + ratemarr, data=affair_data)
+summary(regression_3)
+```

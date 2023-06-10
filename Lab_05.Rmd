@@ -1,0 +1,114 @@
+---
+title: "In-class Lab 5"
+author: "ECON 425 (Justin Heflin, West Virginia University)"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+date: "February 10, 2023"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The purpose of this in-class lab is to further practice your regression skills. The lab may be completed as a group, but each student should turn in their own work. To get credit, upload your .R script to the appropriate place on eCampus (``In-Class Labs'' folder).
+
+## For starters
+Open up a new R script (named `ICL5_XYZ.R`, where `XYZ` are your initials)
+
+## Install a new R Package
+```{}
+install.packages("car")
+```
+```{r}
+library(car)
+```
+For this lab, let's use data on house prices. This data is located in the `hprice1` data set in the `wooldridge` package. Each observation is a house. 
+```{r}
+library(wooldridge)
+house_prices <- as.data.frame(hprice1)
+#View(house_prices)
+```
+Variable Names:
+\begin{itemize}
+\item price: house price, \$1000s
+\item assess: assessed value, \$1000s
+\item bdrms: number of bedrooms
+\item lotsize: size of lot in square feet
+\item sqrft: size of house in square feet
+\item colonial: dummy variable where =1 if home is colonial style
+\end{itemize}
+
+```{r results='hide'}
+summary(house_prices)
+```
+
+## Multiple Regression
+Let's estimate the following regression model:
+\begin{equation*}
+price = \beta_0 + \beta_{1}lotsize + \beta_{2}colonial + \epsilon
+\end{equation*}
+where \emph{price} is the house price in thousands of dollars. 
+
+The code to do so:
+```{r results='hide'}
+regression_1 <- lm(price ~ lotsize + colonial, data = house_prices)
+summary(regression_1)
+```
+Notice our $R^2$ is relatively small, implying our estimated model does not do a great job of explaining our dependent variable (`price`). We can also see this visually by using the `car` package we installed and loaded earlier. 
+```{r}
+avPlots(regression_1)
+```
+Here is how to interpret each plot:
+
+- The x-axis displays a single independent variable (`lotsize`, `colonial`) and the y-axis displays the dependent variable (`price`)
+- The blue line shows the association between the independent variable and the dependent variable, \emph{while holding the value of all other independent variables constant}
+- The points that are labeled in each plot represent the observations with the largest \textcolor{red}{residuals} and the observations with the largest partial leverage (implying those observations are outliers that are heavily influencing the fit of the model). In the case of the `lotsize` plot observations 42, 73, and 77 represent the largest residuals. 
+- Note that the angle of the line in each plot matches the sign of the coefficient from the estimated regression equation. 
+
+Let's estimate the following regression model:
+\begin{equation*}
+price = \beta_0 + \beta_{1}sqrft + \beta_{2}bdrms + \epsilon
+\end{equation*}
+where \emph{price} is the house price in thousands of dollars. 
+
+The code to do so:
+```{r results='hide'}
+regression_2 <- lm(price ~ sqrft + bdrms, data = house_prices)
+summary(regression_2)
+```
+You should get a coefficient of `0.128` on `sqrft` and `15.2` on `bdrms`. Interpret these coefficients. (You can type the interpretation as a comment in your .R script) Do these numbers seem reasonable?
+
+You should get $R^2$ = 0.632. Based on that number, do you believe this is a good model of house prices?
+```{r}
+avPlots(regression_2)
+```
+Now let's add a third independent variable, `assess`, and see if our coefficients change, what happens to our $R^2$ (does it increase, decrease, or remain relatively the same)
+\begin{equation*}
+price = \beta_0 + \beta_{1}sqrft + \beta_{2}bdrms + \beta_{3}assess + \epsilon
+\end{equation*}
+```{r results='hide'}
+regression_3 <- lm(price ~ sqrft + bdrms + assess, data = house_prices)
+summary(regression_3)
+```
+Let's first take a look at our estimated regression coefficients. Intuitively, does it make sense that as the size of the house in square feet decreases that price would increase? What about the signs (directions) for the other two independent variables? 
+
+Now look at our $R^2$, you should get 0.826, implying this estimated model is a better fit to our sample of data. Again, we can visually see this by looking at the plots of this regression. 
+```{r}
+avPlots(regression_3)
+```

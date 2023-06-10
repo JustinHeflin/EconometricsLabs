@@ -1,0 +1,129 @@
+---
+title: "In-Class Lab 10"
+author: "ECON 425 (Justin Heflin, West Virginia University)"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{multicol}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+date: "April 14, 2023"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = 'hide', fig.keep = 'none')
+```
+
+The purpose of this lab is to practice using R for time series models. The lab may be completed as a group. To receive credit, upload your .R script to the appropriate place on eCampus (``In-Class Labs'' folder).
+
+## For starters
+Open a new R script (named `ICL10_XYZ.R`, where `XYZ` are your initials)
+
+## Clean out/``Sweep'' R Studio
+Click the broom in the Environment panel (top-right), it is directly below the Tutorial button. Also, in the bottom-right panel, click the Plots button and then click the broom in that panel. This should help with loading things into R. 
+
+## R Packages
+```
+install.packages("dplyr")
+```
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggplot2)
+library(wooldridge)
+library(dplyr)
+library(modelsummary)
+library(sandwich)
+library(lmtest)
+```
+
+## Load the data
+We are going to use the `intdef` data-set from the `Wooldridge` R Package
+```{r}
+macro_data <- as.data.frame(intdef)
+summary(macro_data)
+```
+
+This data-set is time-series with annual observations from 1948 to 2003 (56 observations) on 13 variables.
+
+\textbf{Variable Names and brief description:}
+\begin{itemize}
+\item i3: 3 month Treasury bill rate
+\item inf: CPI inflation rate
+\item rec: federal receipts, percent GDP
+\item out: federal outlays, percent GDP
+\item def: out - rec
+\end{itemize}
+
+## Plot time series data
+Let's have a look at the inflation rate for the US over the period 1948-2003:
+```{r}
+ggplot(macro_data, aes(year, inf)) + geom_line()
+```
+
+## Determinants of interest rate using a Distributed Lag Model 
+
+Now let's estimate the following regression model:
+\begin{equation*}
+i3_{t} = \beta_0 + \beta_{1}inf_{t} + \beta_{2}inf_{t-1} + \beta_{3}inf_{t-2} + \beta_{4}def_{t} + u_{t}
+\end{equation*}
+
+```{r}
+regression <- lm(i3 ~ inf + lag(inf,1) + lag(inf,2) + def, data = macro_data)
+summary(regression)
+```
+
+## Using Newey-West Standard Errors on Distributed Lag Model
+```{r}
+NW_VCOV <- NeweyWest(regression)
+coeftest(regression, vcov. = NW_VCOV)
+```
+
+## Determinants of interest rate using a Lagged Dependent Variable Model
+
+\begin{equation*}
+i3_{t} = \beta_0 + \beta_{1}inf_{t} + \beta_{2}i3_{t-1} + \beta_{3}i3_{t-2} + \beta_{4}def_{t} + u_{t}
+\end{equation*}
+
+```{r}
+regression_2 <- lm(i3 ~ inf + lag(i3, 1) + lag(i3,2) + def, data = macro_data)
+summary(regression_2)
+```
+
+## Using Newey-West Standard Errors on Lagged Dependent Variable Model
+```{r}
+NW_VCOV_2 <- NeweyWest(regression_2)
+coeftest(regression_2, vcov. = NW_VCOV_2)
+```
+
+## Determinants of interest rate using both classes of Dynamic Models
+
+\begin{equation*}
+i3_{t} = \beta_0 + \beta_{1}inf_{t} + \beta_{2}inf_{t-1} + \beta_{3}i3_{t-1} + \beta_{4}def_{t} + u_{t}
+\end{equation*}
+
+```{r}
+regression_3 <- lm(i3 ~ inf + lag(inf,1) + lag(i3,1) + def, data = macro_data)
+summary(regression_3)
+```
+
+## Using Newey-Standard Errors on Dynamic Model
+```{r}
+NW_VCOV_3 <- NeweyWest(regression_3)
+coeftest(regression_3, vcov. = NW_VCOV_3)
+```
+
+
+
+
